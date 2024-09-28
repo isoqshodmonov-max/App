@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="main-admin" class="welcome-container">
+        <h1>Yangiliklar Yuborish</h1>
+        <form id="news-form">
+            <label for="news-title"></label>
+            <input type="text" style="width: 762px;"  id="news-title" name="news-title" placeholder="Yangilik sarlavhasi..." required>
+            <br><br>
+            <label for="news-details"></label>
+            <textarea style="border: 0; padding: 12px; border-radius: 4px;" cols="100" rows="10" id="news-details" name="news-details" placeholder="Yangilik matni..." required></textarea>
+    
+            <label for="news-image"></label>
+            <input type="url" id="news-image" name="news-image" placeholder="Rasm URL manzili" required>
+    
+            
+            <button type="submit" style="width: 120px;">Yuborish</button>
+        </form>
+        <form action="/logout" method="POST">
+            <button type="submit" style="width: 120px;">Chiqish</button>
+        </form>
+
+        <h2 class="h2">Yuborilgan Yangiliklar</h2>
+        <div id="news-list"></div>
+    </div>
+    
+    <script>
+        document.getElementById('news-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const news = {
+                title: document.getElementById('news-title').value,
+                details: document.getElementById('news-details').value,
+                imageUrl: document.getElementById('news-image').value
+            };
+    
+            fetch('/add-news', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(news)
+            }).then(response => response.json()).then(data => {
+                alert(data.message);
+                if (data.success) {
+                    document.getElementById('news-form').reset();
+                    fetchNews(); // Yangiliklar ro'yxatini yangilash
+                }
+            });
+        });
+
+        // Yangiliklarni olish va ko'rsatish
+        function fetchNews() {
+            fetch('/get-news')
+                .then(response => response.json())
+                .then(news => {
+                    const newsList = document.getElementById('news-list');
+                    newsList.innerHTML = ''; // Oldingi yangiliklarni tozalash
+
+                    news.forEach((item, index) => {
+                        const newsDiv = document.createElement('div');
+                        newsDiv.classList.add('news-item');
+                        newsDiv.innerHTML = `
+                            <h2>${item.title}</h2>
+                            <p>${item.details}</p>
+                            <img src="${item.imageUrl}" alt="Yangilik rasmi" style="height:auto;">
+                            <p><small>Yuborilgan vaqt: ${item.formattedDate}</small></p>
+                            <p><strong>Ko'rish soni: ${item.views}</strong></p>
+                            <button style="width:120px; color:red; cursor: pointer;" onclick="deleteNews(${index})">Delete</button>
+                        `;
+                        newsList.appendChild(newsDiv);
+                    });
+                });
+        }
+
+        // Yangilikni o'chirish
+        function deleteNews(index) {
+            fetch(`/delete-news/${index}`, {
+                method: 'DELETE'
+            }).then(response => response.json()).then(data => {
+                alert(data.message);
+                fetchNews(); // Yangiliklar ro'yxatini yangilash
+            });
+        }
+
+        // Sahifa yuklanganda yangiliklarni olish
+        window.onload = fetchNews;
+    </script>
+</body>
+</html>
+
